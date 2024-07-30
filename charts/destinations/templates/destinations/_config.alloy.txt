@@ -1,0 +1,12 @@
+{{- define "destinations.config.alloy" -}}
+// Destinations
+{{- range $destination := $.Values.destinations }}
+// Destination: {{ $destination.name }} ({{ $destination.type }})
+{{- if eq $destination.type "prometheus" }}
+  {{- include "destinations.prometheus.alloy" $destination | indent 0 }}
+{{- end -}}
+{{- if eq $destination.type "loki" }}
+  {{- include "destinations.loki.alloy" $destination | indent 0 }}
+{{- end -}}
+{{- end -}}
+{{- end -}}

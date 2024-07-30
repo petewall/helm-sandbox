@@ -1,0 +1,21 @@
+{{- define "destinations.loki.alloy" }}
+loki.write {{ .name | quote }} {
+  endpoint {
+    url = {{ include "grafana-telemetry-collector.helper.read_nonsensitive" (dict "name" .name "values" .values "key" "url") }}
+    tenant_id = {{ include "grafana-telemetry-collector.helper.read_nonsensitive" (dict "name" .name "values" .values "key" "tenantId") }}
+{{- if .values.proxyURL }}
+    proxy_url = {{ .values.proxyURL | quote }}
+{{- end }}
+{{- if and (hasKey .values "auth" ) (eq .values.auth.type "basic") }}
+    basic_auth {
+{{- if (include "grafana-telemetry-collector.helper.has_secret" (dict "values" .values "key" "username")) }}
+      username = {{ include "grafana-telemetry-collector.helper.read_auth_nonsensitive" (dict "name" .name "values" .values "key" "username") }}
+{{- end }}
+{{- if (include "grafana-telemetry-collector.helper.has_secret" (dict "values" .values "key" "password")) }}
+      password = {{ include "grafana-telemetry-collector.helper.read_auth" (dict "name" .name "values" .values "key" "password") }}
+{{- end }}
+    }
+{{- end }}
+  }
+}
+{{- end }}

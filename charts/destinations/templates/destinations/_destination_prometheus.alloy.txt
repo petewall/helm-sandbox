@@ -1,0 +1,16 @@
+{{- define "destinations.prometheus.alloy" }}
+prometheus.remote_write {{ include "helper.alloy_name" .name | quote }} {
+  endpoint {
+    url = {{ .url | quote }}
+{{- if eq (include "destination.auth.type" .) "basic" }}
+    basic_auth {
+      username = {{ include "destination.secret.read_nonsensitive" (dict "values" . "key" "auth.username") }}
+      password = {{ include "destination.secret.read" (dict "values" . "key" "auth.password") }}
+    }
+{{- end }}
+{{- if eq (include "destination.auth.type" .) "bearer_token" }}
+    bearer_token = {{ include "destination.secret.read" (dict "values" . "key" "auth.bearer_token") }}
+{{- end }}
+  }
+}
+{{- end }}

@@ -1,0 +1,178 @@
+cluster:
+  name: my-cluster
+
+externalServices:
+  # Connection information for Prometheus
+  prometheus:
+    # -- Prometheus host where metrics will be sent
+    # @section -- External Services (Prometheus)
+    host: ""
+    # -- The key for the host property in the secret
+    # @section -- External Services (Prometheus)
+    hostKey: host
+
+    # -- The type of server protocol for writing metrics. Valid options:
+    #  "remote_write" will use Prometheus Remote Write,
+    #  "otlp" will use OTLP,
+    #  "otlphttp" will use OTLP HTTP
+    # @section -- External Services (Prometheus)
+    protocol: "remote_write"
+    # -- HTTP proxy to proxy requests to Prometheus through.
+    # @section -- External Services (Prometheus)
+    proxyURL: ""
+    # -- Prometheus metrics query endpoint. Preset for Grafana Cloud Metrics instances.
+    # @section -- External Services (Prometheus)
+    queryEndpoint: /api/prom/api/v1/query
+    # -- Prometheus metrics write endpoint. Preset for Grafana Cloud Metrics instances.
+    # @section -- External Services (Prometheus)
+    writeEndpoint: /api/prom/push
+    # -- Custom labels to be added to all time series, all values are treated as strings and automatically quoted.
+    # @section -- External Services (Prometheus)
+    externalLabels: {}
+    # -- Custom labels to be added to all time series through a dynamic reference, all values are treated as raw strings and not quoted.
+    # @section -- External Services (Prometheus)
+    externalLabelsFrom: {}
+    # -- Rule blocks to be added to the [write_relabel_config block](https://grafana.com/docs/alloy/latest/reference/components/prometheus.remote_write/#write_relabel_config-block)
+    # of the prometheus.remote_write component.
+    # @section -- External Services (Prometheus)
+    writeRelabelConfigRules: ""
+
+    # -- Sets the `X-Scope-OrgID` header when sending metrics
+    # @section -- External Services (Prometheus)
+    tenantId: ""
+    # -- The key for the tenant ID property in the secret
+    # @section -- External Services (Prometheus)
+    tenantIdKey: tenantId
+
+    # -- one of "none", "basic"
+    # @section -- External Services (Prometheus)
+    authMode: basic
+
+    # Authenticate to Prometheus using basic authentication
+    # @section -- External Services (Prometheus)
+    basicAuth:
+      # -- Prometheus basic auth username
+      # @section -- External Services (Prometheus)
+      username: ""
+      # -- The key for the username property in the secret
+      # @section -- External Services (Prometheus)
+      usernameKey: username
+      # -- Prometheus basic auth password
+      # @section -- External Services (Prometheus)
+      password: ""
+      # -- The key for the password property in the secret
+      # @section -- External Services (Prometheus)
+      passwordKey: password
+
+    # Configure the Prometheus Remote Write Queue
+    # [docs](https://grafana.com/docs/alloy/latest/reference/components/prometheus.remote_write/#queue_config-block)
+    queue_config:
+      # -- Number of samples to buffer per shard.
+      # @default -- 10000
+      # @section -- External Services (Prometheus)
+      capacity: 10000
+      # -- Minimum amount of concurrent shards sending samples to the endpoint.
+      # @default -- 1
+      # @section -- External Services (Prometheus)
+      min_shards: 1
+      # -- Maximum number of concurrent shards sending samples to the endpoint.
+      # @default -- 50
+      # @section -- External Services (Prometheus)
+      max_shards: 50
+      # -- Maximum number of samples per send.
+      # @default -- 2000
+      # @section -- External Services (Prometheus)
+      max_samples_per_send: 2000
+      # -- Maximum time samples will wait in the buffer before sending.
+      # @default -- 5s
+      # @section -- External Services (Prometheus)
+      batch_send_deadline: 5s
+      # -- Initial retry delay. The backoff time gets doubled for each retry.
+      # @default -- 30ms
+      # @section -- External Services (Prometheus)
+      min_backoff: 30ms
+      # -- Maximum retry delay.
+      # @default -- 5s
+      # @section -- External Services (Prometheus)
+      max_backoff: 5s
+      # -- Retry when an HTTP 429 status code is received.
+      # @default -- true
+      # @section -- External Services (Prometheus)
+      retry_on_http_429: true
+      # -- Maximum age of samples to send.
+      # @default -- 0s
+      # @section -- External Services (Prometheus)
+      sample_age_limit: 0s
+
+    # Credential management
+    secret:
+      # -- Should this Helm chart create the secret. If false, you must define the name and namespace values.
+      # @section -- External Services (Prometheus)
+      create: true
+      # -- The name of the secret.
+      # @section -- External Services (Prometheus)
+      name: ""
+      # -- The namespace of the secret. Only used if secret.create = "false"
+      # @section -- External Services (Prometheus)
+      namespace: ""
+
+    # -- TLS settings to configure for the metrics service, compatible with
+    # [remoteWrite protocol](https://grafana.com/docs/alloy/latest/reference/components/prometheus.remote_write/#tls_config-block),
+    # [otlp](https://grafana.com/docs/alloy/latest/reference/components/otelcol.exporter.otlp/#tls-block), or
+    # [otlphttp](https://grafana.com/docs/alloy/latest/reference/components/otelcol.exporter.otlphttp/#tls-block) protocols
+    # @section -- External Services (Prometheus)
+    tls: {}
+
+    # Metric processor settings. Only applies when protocol is "otlp" or "otlphttp"
+    processors:
+      batch:
+        # -- Amount of data to buffer before flushing the batch.
+        # @section -- External Services (Prometheus)
+        size: 8192
+        # -- Upper limit of a batch size. When set to 0, there is no upper limit.
+        # @section -- External Services (Prometheus)
+        maxSize: 0
+        # -- How long to wait before flushing the batch.
+        # @section -- External Services (Prometheus)
+        timeout: 2s
+      memoryLimiter:
+        # -- Use a memory limiter.
+        # @section -- External Services (Prometheus)
+        enabled: false
+        # -- How often to check memory usage.
+        # @section -- External Services (Prometheus)
+        checkInterval: 1s
+        # -- Maximum amount of memory targeted to be allocated by the process heap.
+        # @section -- External Services (Prometheus)
+        limit: 0MiB
+
+    # Write-Ahead Log (WAL) settings. Only applies when protocol is "remote_write"
+    wal:
+      # -- How frequently to clean up the WAL.
+      # @section -- External Services (Prometheus)
+      truncateFrequency: 2h
+
+      # -- Minimum time to keep data in the WAL before it can be removed.
+      # @section -- External Services (Prometheus)
+      minKeepaliveTime: 5m
+
+      # -- Maximum time to keep data in the WAL before removing it.
+      # @section -- External Services (Prometheus)
+      maxKeepaliveTime: 8h
+
+    # -- Whether native histograms should be sent. Only applies when protocol is "remote_write".
+    # @section -- External Services (Prometheus)
+    sendNativeHistograms: false
+
+metrics:
+  enabled: true
+
+
+
+
+
+configOverrides:
+  - type: remote.kubernetes.secret
+    name: metrics_service
+    replacement: |
+      name = "diff-secret"

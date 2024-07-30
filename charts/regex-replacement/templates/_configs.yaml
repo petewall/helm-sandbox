@@ -1,0 +1,5 @@
+{{- define "alloyConfig" -}}
+  {{- if .Values.metrics.enabled }}
+    {{- include "configOverride" (dict "Values" .Values "config" (include "alloy.config.metricsService" .) ) }}
+  {{- end }}
+{{- end -}}
