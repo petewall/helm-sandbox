@@ -40,6 +40,21 @@ false
 {{- end }}
 {{- end }}
 
+{{- define "destination.secret.ref" -}}
+{{- $defaultKey := (( regexSplit "\\." .key -1) | last) -}}
+{{- $value := .values -}}
+{{- range $pathPart := (regexSplit "\\." (printf "%sFrom" .key) -1) -}}
+{{- if hasKey $value $pathPart -}}
+  {{- $value = (index $value $pathPart) -}}
+{{- else -}}
+  {{- $value = "" -}}
+  {{- break -}}
+{{- end -}}
+{{- end -}}
+{{- $value -}}
+{{- end -}}
+
+
 {{- define "destination.secret.key" -}}
 {{- $defaultKey := (( regexSplit "\\." .key -1) | last) -}}
 {{- $value := .values -}}
@@ -68,20 +83,18 @@ false
 {{- end }}
 
 
-{{- define "destination.secret.read_nonsensitive" }}
-{{- if eq (include "destination.secret.type" .values) "embedded" -}}
-{{ include "destination.secret.value" (dict "values" .values "key" .key) | quote }}
-{{- else -}}
-{{- $credKey := include "destination.secret.key" (dict "values" .values "key" .key) -}}
-nonsensitive(remote.kubernetes.secret.{{ include "helper.alloy_name" .values.name }}.data[{{ $credKey | quote }}])
-{{- end }}
-{{- end }}
-
 {{- define "destination.secret.read" }}
-{{- if eq (include "destination.secret.type" .values) "embedded" -}}
+{{- $credRef := include "destination.secret.ref" (dict "values" .values "key" .key) -}}
+{{- if $credRef -}}
+{{ $credRef }}
+{{- else if eq (include "destination.secret.type" .values) "embedded" -}}
 {{ include "destination.secret.value" (dict "values" .values "key" .key) | quote }}
 {{- else -}}
 {{- $credKey := include "destination.secret.key" (dict "values" .values "key" .key) -}}
+{{- if .nonsensitive -}}
+nonsensitive(remote.kubernetes.secret.{{ include "helper.alloy_name" .values.name }}.data[{{ $credKey | quote }}])
+{{- else -}}
 remote.kubernetes.secret.{{ include "helper.alloy_name" .values.name }}.data[{{ $credKey | quote }}]
-{{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
+{{- end -}}

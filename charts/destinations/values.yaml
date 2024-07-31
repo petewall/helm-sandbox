@@ -20,6 +20,8 @@ destinations:
       passwordKey: prom-password
     secret:
       create: false
+      name: my-external-secret
+      namespace: some-other-namespace
 
   - name: promWithEmbeddedCreds
     type: prometheus
@@ -37,3 +39,11 @@ destinations:
     auth:
       type: bearer_token
       bearer_token: my-token
+
+  - name: promWithBasicCreds
+    type: prometheus
+    url: https://prometheus-us-central1.grafana.net
+    auth:
+      type: basic
+      usernameFrom: env("PROM_USERNAME")
+      passwordFrom: env("PROM_PASSWORD")

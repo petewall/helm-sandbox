@@ -4,7 +4,7 @@ prometheus.remote_write {{ include "helper.alloy_name" .name | quote }} {
     url = {{ .url | quote }}
 {{- if eq (include "destination.auth.type" .) "basic" }}
     basic_auth {
-      username = {{ include "destination.secret.read_nonsensitive" (dict "values" . "key" "auth.username") }}
+      username = {{ include "destination.secret.read" (dict "values" . "key" "auth.username" "nonsensitive" true) }}
       password = {{ include "destination.secret.read" (dict "values" . "key" "auth.password") }}
     }
 {{- end }}
