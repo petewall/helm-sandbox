@@ -1,21 +1,23 @@
 {{- define "destinations.loki.alloy" }}
 loki.write {{ .name | quote }} {
   endpoint {
-    url = {{ include "grafana-telemetry-collector.helper.read_nonsensitive" (dict "name" .name "values" .values "key" "url") }}
-    tenant_id = {{ include "grafana-telemetry-collector.helper.read_nonsensitive" (dict "name" .name "values" .values "key" "tenantId") }}
-{{- if .values.proxyURL }}
-    proxy_url = {{ .values.proxyURL | quote }}
-{{- end }}
-{{- if and (hasKey .values "auth" ) (eq .values.auth.type "basic") }}
+    url = {{ .url | quote }}
+    tenant_id = {{ include "destinations.secret.read" (dict "destination" . "key" "tenantId" "nonsensitive" true) }}
+{{- if eq (include "destinations.auth.type" .) "basic" }}
     basic_auth {
-{{- if (include "grafana-telemetry-collector.helper.has_secret" (dict "values" .values "key" "username")) }}
-      username = {{ include "grafana-telemetry-collector.helper.read_auth_nonsensitive" (dict "name" .name "values" .values "key" "username") }}
-{{- end }}
-{{- if (include "grafana-telemetry-collector.helper.has_secret" (dict "values" .values "key" "password")) }}
-      password = {{ include "grafana-telemetry-collector.helper.read_auth" (dict "name" .name "values" .values "key" "password") }}
-{{- end }}
+      username = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.username" "nonsensitive" true) }}
+      password = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.password") }}
     }
+{{- else if eq (include "destinations.auth.type" .) "bearer_token" }}
+    bearer_token = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.bearer_token") }}
 {{- end }}
   }
 }
 {{- end }}
+
+{{- define "destinations.loki.secrets" -}}
+- tenantId
+- auth.username
+- auth.password
+- auth.bearer_token
+{{- end -}}

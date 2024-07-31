@@ -40,10 +40,19 @@ destinations:
       type: bearer_token
       bearer_token: my-token
 
-  - name: promWithBasicCreds
+  - name: promWithEnvVarCreds
     type: prometheus
     url: https://prometheus-us-central1.grafana.net
     auth:
       type: basic
       usernameFrom: env("PROM_USERNAME")
       passwordFrom: env("PROM_PASSWORD")
+
+  - name: loki
+    type: loki
+    url: http://loki.monitoring.svc.cluster.local:3100
+    tenantId: 1
+    auth:
+      type: basic
+      username: my-username
+      password: my-password

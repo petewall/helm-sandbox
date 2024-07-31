@@ -1,8 +1,12 @@
-{{- define "destination.auth.type" }}
+{{/*Helper function to return the auth type, defaulting to none*/}}
+{{/*Inputs: . (destination definition)*/}}
+{{- define "destinations.auth.type" }}
 {{- if hasKey . "auth" }}{{ .auth.type | default "none" }}{{ else }}none{{ end }}
 {{- end }}
 
-{{- define "destination.secret.type" }}
+{{/*Helper function to determine the secret type*/}}
+{{/*Inputs: . (destination definition)*/}}
+{{- define "destinations.secret.type" }}
 {{- if hasKey . "secret" }}
   {{- if .secret.embed -}}
 embedded
@@ -16,33 +20,11 @@ create
 {{- end }}
 {{- end }}
 
-{{- define "pre-existing-secret" }}
-{{- if and (hasKey .values "secret") (hasKey .values.secret "create") (not .values.secret.create) }}true{{ else }}false{{ end }}
-{{- end }}
-
-{{/*This returns true if:*/}}
-{{/*1. It has secret data (anything inside auth)*/}}
-{{/*2. It specifically sets secret.create (true or false)*/}}
-{{/*3. It specifically does not set secret.embed*/}}
-{{- define "uses_k8s_secret" }}
-{{- if and (hasKey .values "auth") (not (eq .values.auth.type "none")) }}
-  {{- if and (hasKey .values "secret") (not .values.secret.embed) }}true{{ else }}false{{- end }}
-{{ else }}false{{- end }}
-{{- end }}
-
-{{- define "grafana-telemetry-collector.helper.has_secret" }}
-{{- if (include "pre-existing-secret" (dict "values" .values)) }}
-true
-{{- else if (index .values .key) -}}
-true
-{{- else -}}
-false
-{{- end }}
-{{- end }}
-
-{{- define "destination.secret.ref" -}}
+{{/*Determine if a ___From field has been defined for a secret value*/}}
+{{/*Inputs: destination (destination definition), key (path to secret value)*/}}
+{{- define "destinations.secret.ref" -}}
 {{- $defaultKey := (( regexSplit "\\." .key -1) | last) -}}
-{{- $value := .values -}}
+{{- $value := .destination -}}
 {{- range $pathPart := (regexSplit "\\." (printf "%sFrom" .key) -1) -}}
 {{- if hasKey $value $pathPart -}}
   {{- $value = (index $value $pathPart) -}}
@@ -54,10 +36,11 @@ false
 {{- $value -}}
 {{- end -}}
 
-
-{{- define "destination.secret.key" -}}
+{{/*Determine the key to access a secret value within a secret component*/}}
+{{/*Inputs: destination (destination definition), key (path to secret value)*/}}
+{{- define "destinations.secret.key" -}}
 {{- $defaultKey := (( regexSplit "\\." .key -1) | last) -}}
-{{- $value := .values -}}
+{{- $value := .destination -}}
 {{- range $pathPart := (regexSplit "\\." (printf "%sKey" .key) -1) -}}
 {{- if hasKey $value $pathPart -}}
   {{- $value = (index $value $pathPart) -}}
@@ -69,32 +52,84 @@ false
 {{- $value -}}
 {{- end -}}
 
-{{- define "destination.secret.value" }}
+{{/*Determine the path to the secret value*/}}
+{{/*Inputs: destination (destination definition), key (path to secret value)*/}}
+{{- define "destinations.secret.value" }}
 {{- $key := .key -}}
-{{- $value := .values -}}
+{{- $value := .destination -}}
 {{- range $pathPart := (regexSplit "\\." .key -1) -}}
 {{- if hasKey $value $pathPart -}}
   {{- $value = (index $value $pathPart) -}}
 {{- else -}}
-  {{- fail (printf "cannot find %s" $key) -}}
+  {{- $value = "" -}}
+  {{- break -}}
 {{- end -}}
 {{- end -}}
 {{- $value -}}
 {{- end }}
 
-
-{{- define "destination.secret.read" }}
-{{- $credRef := include "destination.secret.ref" (dict "values" .values "key" .key) -}}
+{{/*Build the alloy command to read a secret value*/}}
+{{/*Inputs: destination (destination definition), key (path to secret value), nonsensitive*/}}
+{{- define "destinations.secret.read" }}
+{{- $credRef := include "destinations.secret.ref" (dict "destination" .destination "key" .key) -}}
 {{- if $credRef -}}
 {{ $credRef }}
-{{- else if eq (include "destination.secret.type" .values) "embedded" -}}
-{{ include "destination.secret.value" (dict "values" .values "key" .key) | quote }}
+{{- else if eq (include "destinations.secret.type" .destination) "embedded" -}}
+{{ include "destinations.secret.value" (dict "destination" .destination "key" .key) | quote }}
 {{- else -}}
-{{- $credKey := include "destination.secret.key" (dict "values" .values "key" .key) -}}
+{{- $credKey := include "destinations.secret.key" (dict "destination" .destination "key" .key) -}}
 {{- if .nonsensitive -}}
-nonsensitive(remote.kubernetes.secret.{{ include "helper.alloy_name" .values.name }}.data[{{ $credKey | quote }}])
+nonsensitive(remote.kubernetes.secret.{{ include "helper.alloy_name" .destination.name }}.data[{{ $credKey | quote }}])
 {{- else -}}
-remote.kubernetes.secret.{{ include "helper.alloy_name" .values.name }}.data[{{ $credKey | quote }}]
+remote.kubernetes.secret.{{ include "helper.alloy_name" .destination.name }}.data[{{ $credKey | quote }}]
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*Determines if the destination will reference a Kubernetes secret*/}}
+{{/*Inputs: . (destination definition)*/}}
+{{- define "destinations.secret.uses_k8s_secret" -}}
+{{- if eq (include "destinations.auth.type" .) "none" }}false
+{{- else if eq (include "destinations.secret.type" .) "embedded" -}}false
+{{- else -}}
+  {{- $hasSecretDefined := false }}
+  {{- $secrets := include (printf "destinations.%s.secrets" .type) . | fromYamlArray }}
+  {{- range $secret := $secrets }}
+    {{- $ref := include "destinations.secret.ref" (dict "destination" $ "key" $secret) -}}
+    {{- $value := include "destinations.secret.value" (dict "destination" $ "key" $secret) -}}
+    {{- if and (not $ref) $value }}
+    {{- $hasSecretDefined = true }}
+    {{- end }}
+  {{- end }}
+{{- $hasSecretDefined }}
+{{- end -}}
+{{- end -}}
+
+{{/*Determines if the destination will create a Kubernetes secret*/}}
+{{/*Inputs: . (destination definition)*/}}
+{{- define "destinations.secret.create_k8s_secret" -}}
+{{- if eq (include "destinations.secret.uses_k8s_secret" .) "false" }}false
+{{- else if and (hasKey . "secret") (hasKey .secret "create") -}}
+{{ .secret.create }}
+{{- else -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*Inputs: destination (destination definition)*/}}
+{{- define "destinations.secret.k8s_secret_name" -}}
+{{- if and (hasKey .destination "secret") (hasKey .destination.secret "name") -}}
+{{ .destination.secret.name }}
+{{- else -}}
+{{ include "helper.k8s_name" .destination.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*Inputs: destination (destination definition)*/}}
+{{- define "destinations.secret.k8s_secret_namespace" -}}
+{{- if and (hasKey .destination "secret") (hasKey .destination.secret "namespace") -}}
+{{ .destination.secret.namespace }}
+{{- else -}}
+{{ .defaultNamespace }}
 {{- end -}}
 {{- end -}}

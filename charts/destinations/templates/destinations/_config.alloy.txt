@@ -8,5 +8,9 @@
 {{- if eq $destination.type "loki" }}
   {{- include "destinations.loki.alloy" $destination | indent 0 }}
 {{- end -}}
+
+{{- if eq (include "destinations.secret.uses_k8s_secret" $destination) "true" }}
+  {{- include "destinations.secret.alloy" (dict "destination" $destination "defaultNamespace" $.Release.Namespace ) | nindent 0 }}
+{{- end -}}
 {{- end -}}
 {{- end -}}
