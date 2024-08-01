@@ -2,20 +2,57 @@
 prometheus.remote_write {{ include "helper.alloy_name" .name | quote }} {
   endpoint {
     url = {{ .url | quote }}
+{{- if .proxyURL }}
+    proxy_url = {{ .proxyURL | quote }}
+{{- end }}
 {{- if eq (include "destinations.auth.type" .) "basic" }}
     basic_auth {
       username = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.username" "nonsensitive" true) }}
       password = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.password") }}
     }
-{{- else if eq (include "destinations.auth.type" .) "bearer_token" }}
-    bearer_token = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.bearer_token") }}
+{{- else if eq (include "destinations.auth.type" .) "bearerToken" }}
+    bearerToken = {{ include "destinations.secret.read" (dict "destination" . "key" "auth.bearerToken") }}
 {{- end }}
   }
+
+{{- if .tls }}
+  tls {
+    insecure_skip_verify = {{ .tls.insecureSkipVerify | default false }}
+    {{- if eq (include "destinations.secret.uses_secret" (dict "destination" . "key" "tls.ca")) "true" }}
+    ca = {{ include "destinations.secret.read" (dict "destination" . "key" "tls.ca") }}
+    {{- end }}
+    {{- if eq (include "destinations.secret.uses_secret" (dict "destination" . "key" "tls.cert")) "true" }}
+    cert = {{ include "destinations.secret.read" (dict "destination" . "key" "tls.cert") }}
+    {{- end }}
+    {{- if eq (include "destinations.secret.uses_secret" (dict "destination" . "key" "tls.key")) "true" }}
+    key = {{ include "destinations.secret.read" (dict "destination" . "key" "tls.key") }}
+    {{- end }}
+  }
+{{- end }}
+
+  send_native_histograms = {{ .sendNativeHistograms | default false }}
+
+{{- if .queueConfig }}
+  queue_config {
+    capacity = {{ .queueConfig.capacity | default 10000}}
+    min_shards = {{ .queueConfig.minShards | default 1 }}
+    max_shards = {{ .queueConfig.maxShards | default 50 }}
+    max_samples_per_send = {{ .queueConfig.maxSamplesPerSend | default 2000 }}
+    batch_send_deadline = {{ .queueConfig.batchSendDeadline | default "5s" | quote }}
+    min_backoff = {{ .queueConfig.minBackoff | default "30ms" | quote }}
+    max_backoff = {{ .queueConfig.maxBackoff | default "5s" | quote }}
+    retry_on_http_429 = {{ .queueConfig.retryOnHttp429 | default true }}
+    sample_age_limit = {{ .queueConfig.sampleAgeLimit | default "0s" | quote }}
+  }
+{{- end }}
 }
 {{- end }}
 
 {{- define "destinations.prometheus.secrets" -}}
 - auth.username
 - auth.password
-- auth.bearer_token
+- auth.bearerToken
+- tls.ca
+- tls.cert
+- tls.key
 {{- end -}}

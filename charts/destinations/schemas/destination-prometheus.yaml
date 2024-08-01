@@ -1,0 +1,61 @@
+name: ""
+type: "prometheus"
+url: ""
+proxyURL: ""
+
+tls:
+  insecureSkipVerify: false
+  ca: ""
+  caKey: ""
+  caFrom: ""
+  caFile: ""
+
+  cert: ""
+  certKey: ""
+  certFrom: ""
+  certFile: ""
+
+  key: ""
+  keyKey: ""
+  keyFrom: ""
+  keyFile: ""
+
+auth:
+  type: "none|basic|bearerToken"  # Strict
+  username: ""
+  usernameKey: ""
+  usernameFrom: ""
+
+  password: ""
+  passwordKey: ""
+  passwordFrom: ""
+
+  bearerToken: ""
+  bearerTokenKey: ""
+  bearerTokenFrom: ""
+
+secret:
+    create: true
+    embed: false
+    name: ""
+    namespace: ""
+
+sendNativeHistograms: false
+
+writeAheadLog:
+  truncateFrequency: 2h
+  minKeepaliveTime: 5m
+  maxKeepaliveTime: 8h
+
+queueConfig:
+  capacity: 10000
+  minShards: 1
+  maxShards: 50
+  maxSamplesPerSend: 2000
+  batchSendDeadline: 5s
+  minBackoff: 30ms
+  maxBackoff: 5s
+  retryOnHttp429: true
+  sampleAgeLimit: 0s
+
+

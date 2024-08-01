@@ -71,7 +71,7 @@ create
 {{/*Build the alloy command to read a secret value*/}}
 {{/*Inputs: destination (destination definition), key (path to secret value), nonsensitive*/}}
 {{- define "destinations.secret.read" }}
-{{- $credRef := include "destinations.secret.ref" (dict "destination" .destination "key" .key) -}}
+{{- $credRef := include "destinations.secret.ref" . -}}
 {{- if $credRef -}}
 {{ $credRef }}
 {{- else if eq (include "destinations.secret.type" .destination) "embedded" -}}
@@ -84,6 +84,12 @@ nonsensitive(remote.kubernetes.secret.{{ include "helper.alloy_name" .destinatio
 remote.kubernetes.secret.{{ include "helper.alloy_name" .destination.name }}.data[{{ $credKey | quote }}]
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*Determines if the destination will reference a secret value*/}}
+{{/*Inputs: destination (destination definition), key (path to secret value), nonsensitive*/}}
+{{- define "destinations.secret.uses_secret" -}}
+{{- if eq (include "destinations.secret.read" .) "" }}false{{- else -}}true{{- end -}}
 {{- end -}}
 
 {{/*Determines if the destination will reference a Kubernetes secret*/}}

@@ -10,6 +10,10 @@ destinations:
       type: basic
       username: my-username
       password: my-password
+    tls:
+      ca: "my ca"
+      cert: "my cert"
+      key: "my key"
 
   - name: promWithExternalSecretCreds
     type: prometheus
@@ -32,13 +36,17 @@ destinations:
       password: mypassword
     secret:
       embed: true
+    tls:
+      ca: "my ca"
+      cert: "my cert"
+      keyFrom: env("PROM_KEY")
 
   - name: promWithBearerToken
     type: prometheus
     url: http://prometheus.monitoring.svc.cluster.local:9090
     auth:
-      type: bearer_token
-      bearer_token: my-token
+      type: bearerToken
+      bearerToken: my-token
 
   - name: promWithEnvVarCreds
     type: prometheus
@@ -47,6 +55,10 @@ destinations:
       type: basic
       usernameFrom: env("PROM_USERNAME")
       passwordFrom: env("PROM_PASSWORD")
+    tls:
+      caFrom: env("PROM_CA")
+      certFrom: env("PROM_CERT")
+      keyFrom: env("PROM_KEY")
 
   - name: loki
     type: loki
